@@ -1,0 +1,83 @@
+{
+  "servers": [
+    {
+      "host": "localhost",
+      "ports": [8080, 8081],
+      "default_server": true,
+      "client_body_limit": "10MB",
+      "error_pages": {
+        "400": "error_pages/400.html",
+        "403": "error_pages/403.html",
+        "404": "error_pages/404.html",
+        "405": "error_pages/405.html",
+        "413": "error_pages/413.html",
+        "500": "error_pages/500.html"
+      },
+      "routes": [
+        {
+          "path": "/",
+          "methods": ["GET"],
+          "root": "www",
+          "default_file": "index.html",
+          "directory_listing": false,
+          "default_directory_file": "index.html"
+        },
+        {
+          "path": "/upload",
+          "methods": ["POST"],
+          "root": "www/uploads",
+          "client_body_limit": "50MB"
+        },
+        {
+          "path": "/files",
+          "methods": ["GET"],
+          "root": "www/files",
+          "directory_listing": true,
+          "default_directory_file": "index.html"
+        },
+        {
+          "path": "/scripts",
+          "methods": ["GET", "POST"],
+          "root": "cgi-bin",
+          "cgi": {
+            ".py": "python3"
+          }
+        },
+        {
+          "path": "/old-page",
+          "methods": ["GET"],
+          "redirect": {
+            "url": "/new-page",
+            "code": 301
+          }
+        },
+        {
+          "path": "/api",
+          "methods": ["GET", "POST", "DELETE"],
+          "root": "www/api",
+          "directory_listing": false
+        }
+      ]
+    },
+    {
+      "host": "localhost",
+      "ports": [9090],
+      "default_server": false,
+      "client_body_limit": "5MB",
+      "error_pages": {
+        "404": "error_pages/404.html",
+        "500": "error_pages/500.html"
+      },
+      "routes": [
+        {
+          "path": "/",
+          "methods": ["GET"],
+          "root": "www",
+          "default_file": "index.html",
+          "directory_listing": false,
+          "default_directory_file": "index.html"
+        }
+      ]
+    }
+  ]
+}
