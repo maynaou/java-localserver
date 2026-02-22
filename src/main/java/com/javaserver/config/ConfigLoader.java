@@ -1,4 +1,4 @@
-package main.java.com.javaserver.config;
+package com.javaserver.config;
 
 // import java.nio.file.Files;
 // import java.nio.file.Paths;
