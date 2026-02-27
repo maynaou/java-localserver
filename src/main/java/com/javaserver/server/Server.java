@@ -52,8 +52,11 @@ public class Server {
                             continue;
                         }
 
+
+
                         String request = new String(buffer.array(), 0, bytesRead);
                         System.out.println("--- Request Received ---\n" + request);
+                        
 
                         // Minimal HTTP response so browser doesn't hang
                         String body = "<h1>Server is working!</h1>";
