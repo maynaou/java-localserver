@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
+import com.javaserver.http.HttpRequest;
 
 public class Server {
     private static final int PORT = 8080;
@@ -55,8 +56,9 @@ public class Server {
 
 
                         String request = new String(buffer.array(), 0, bytesRead);
-                        System.out.println("--- Request Received ---\n" + request);
-                        
+
+                        HttpRequest httpRequest = HttpRequest.parse(request);
+                        System.out.println("Parsed Request: " + httpRequest.getMethod() + " ttt" + httpRequest.getPath());
 
                         // Minimal HTTP response so browser doesn't hang
                         String body = "<h1>Server is working!</h1>";
