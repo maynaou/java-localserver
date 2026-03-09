@@ -2,7 +2,6 @@ package com.javaserver.parser;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -17,10 +16,7 @@ public class ConfigParser {
             throw new RuntimeException("[ConfigParser] Impossible de lire: " + filePath, e);
         }
 
-        System.out.println(json);
         JsonParser parser = new JsonParser(json);
-        System.out.println(parser.getSrc());
-        System.out.println(parser.getPos());
         Map<String, Object> root = parser.parse();
         System.out.println(root);
         return null;
