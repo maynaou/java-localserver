@@ -2,6 +2,7 @@ package com.javaserver.parser;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +23,19 @@ public class ConfigParser {
         Map<String, Object> rootMap = (Map<String, Object>) root;
         List<Object> serversArray = (List<Object>) rootMap.get("servers");
         System.out.println(serversArray);
-        return null;
+        List<ConfigServer> result = new ArrayList<>();
+        for (Object item : serversArray) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> serverMap = (Map<String, Object>) item;
+            result.add(buildServer(serverMap));
+        }
+        return result;
     }
+
+    private static ConfigServer buildServer(Map<String, Object> m) { 
+        
+
+    }
+
+
 }
