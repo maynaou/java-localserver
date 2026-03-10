@@ -8,6 +8,7 @@ import java.util.Map;
 import com.javaserver.config.ConfigServer;
 
 public class ConfigParser {
+    @SuppressWarnings("unchecked")
     public static List<ConfigServer> parse(String filePath) {
         String json;
         try {
@@ -17,8 +18,10 @@ public class ConfigParser {
         }
 
         JsonParser parser = new JsonParser(json);
-        Map<String, Object> root = parser.parse();
-        System.out.println(root);
+        Object root = parser.parse();
+        Map<String, Object> rootMap = (Map<String, Object>) root;
+        List<Object> serversArray = (List<Object>) rootMap.get("servers");
+        System.out.println(serversArray);
         return null;
     }
 }
