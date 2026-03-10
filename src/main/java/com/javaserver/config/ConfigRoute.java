@@ -42,4 +42,12 @@ public class ConfigRoute {
     public String getDefaultDirectoryFile() {
         return defaultDirectoryFile;
     }
+
+    @Override
+public String toString() {
+    return "\n  [Route] path=" + path
+         + " | methods=" + methods
+         + " | root=" + root
+         + " | dirListing=" + directoryListing;
+}
 }

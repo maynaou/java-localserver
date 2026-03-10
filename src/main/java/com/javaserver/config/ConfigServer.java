@@ -45,4 +45,15 @@ public class ConfigServer {
     public List<ConfigRoute> getRoutes() {
         return routes;
     }
+
+
+    @Override
+public String toString() {
+    return "\n[Server] host=" + host
+         + " | ports=" + ports
+         + " | default=" + defaultServer
+         + " | bodyLimit=" + clientBodyLimit
+         + " | errorPages=" + errorPages.keySet()
+         + " | routes=" + routes;
+}
 }

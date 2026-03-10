@@ -13,8 +13,8 @@ public class App
 {
     public static void main( String[] args )
     {
-        // System.out.println( "Hello World!" );
         List<ConfigServer> servers = ConfigLoader.load("config.json");
-        System.out.println(servers);
+        System.out.println(servers.toString());
+        
     }
 }
