@@ -25,10 +25,11 @@ public class ConfigLoader {
                         if (item instanceof Map) {
                             
                             Map<String, Object> map = (Map<String, Object>) item;
-                            // ServerConfig cfg = new ServerConfig().fromMap(map);
-                            // if (cfg != null) {
-                            //     cfgs.add(cfg);
-                            // }
+                              System.err.println("Config error:11111111111");
+                            ServerConfig cfg = new ServerConfig().fromMap(map);
+                            if (cfg != null) {
+                                cfgs.add(cfg);
+                            }
                         }
                     }
                     return cfgs;
