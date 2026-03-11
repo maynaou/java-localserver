@@ -15,11 +15,11 @@ public class App
     public static void main( String[] args )
     {
         List<ConfigServer> servers = ConfigLoader.load("config.json");
-        System.out.println(servers);
+        /*System.out.println(servers);
 
         for (ConfigServer server : servers) {
             System.out.println(server);
-        }
+        }*/
 
         try {
             Server s = new Server(servers);
@@ -28,7 +28,5 @@ public class App
             e.printStackTrace();
              System.out.println("Erreur lors du démarrage du serveur: " + e.getMessage());
         }
-
-        
     }
 }

@@ -26,7 +26,7 @@ public class ConfigParser {
         Map<String, Object> rootMap = (Map<String, Object>) root;
         List<Object> serversArray = (List<Object>) rootMap.get("servers");
 
-        System.out.println(serversArray);
+        //System.out.println(serversArray);
 
         if (serversArray == null || serversArray.isEmpty()) {
             throw new RuntimeException("[ConfigParser] Le JSON ne contient pas de 'servers' ou la liste est vide.");

@@ -92,10 +92,6 @@ public class JsonParser {
         List<Object> list = new ArrayList<>();
         expect('[');
         skipWhitespace();
-        /*if (peek() == ']') {
-            pos++;
-            return list; // TODO
-        }*/
         while(true) {
             list.add(parseValue());
             skipWhitespace();

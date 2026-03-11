@@ -6,6 +6,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 import com.javaserver.config.ConfigServer;
+import com.javaserver.http.Request;
+import com.javaserver.http.Response;
+import com.javaserver.http.Router;
 
 public class ClientConnection {
 
@@ -50,6 +53,11 @@ public class ClientConnection {
         // HttpRequest request = HttpRequestParser.parse(rawRequest);
         // HttpResponse response = Router.handle(request, config);
         // channel.write(ByteBuffer.wrap(response.toBytes()));
+        Request request = Request.parse(rawRequest);
+        Response response = Router.handle(request, config);
+
+        writeBuffer = ByteBuffer.wrap(response.toBytes());
+        key.interestOps(SelectionKey.OP_WRITE);
     }
 
 
