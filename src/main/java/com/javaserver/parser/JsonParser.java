@@ -92,10 +92,10 @@ public class JsonParser {
         List<Object> list = new ArrayList<>();
         expect('[');
         skipWhitespace();
-        if (peek() == ']') {
+        /*if (peek() == ']') {
             pos++;
             return list; // TODO
-        }
+        }*/
         while(true) {
             list.add(parseValue());
             skipWhitespace();
@@ -138,8 +138,8 @@ public class JsonParser {
     private void expect(char c) {
         skipWhitespace();
         if (pos >= src.length() || src.charAt(pos) != c) {
-           // System.out.println("Expected '" + c + "' at position " + pos);
-            return;
+        throw new RuntimeException("Expected '" + c + "' at pos=" + pos 
+            + ", got '" + src.charAt(pos) + "'"); 
         }
            
         pos++;

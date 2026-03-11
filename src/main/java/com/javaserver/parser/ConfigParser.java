@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.javaserver.config.ConfigRedirect;
 import com.javaserver.config.ConfigRoute;
 import com.javaserver.config.ConfigServer;
 
@@ -24,7 +25,12 @@ public class ConfigParser {
         Object root = parser.parse();
         Map<String, Object> rootMap = (Map<String, Object>) root;
         List<Object> serversArray = (List<Object>) rootMap.get("servers");
+
         System.out.println(serversArray);
+
+        if (serversArray == null || serversArray.isEmpty()) {
+            throw new RuntimeException("[ConfigParser] Le JSON ne contient pas de 'servers' ou la liste est vide.");
+        }
         List<ConfigServer> result = new ArrayList<>();
         for (Object item : serversArray) {
             Map<String, Object> serverMap = (Map<String, Object>) item;
@@ -42,13 +48,20 @@ private static ConfigServer buildServer(Map<String, Object> m) {
     Boolean defaultServer  = (Boolean) m.get("default_server"); // true/false
     String clientBodyLimit = (String)  m.get("client_body_limit"); // "10MB"
 
+    if (host == null || host.isBlank()) {
+            throw new RuntimeException("[ConfigParser] Un serveur est manquant du champ 'host'.");
+    }
     // ── 2. PORTS ───────────────────────────────────────────────────
     // JsonParser retourne TOUS les nombres comme Double → 8080.0
     // On doit convertir en Integer : 8080.0 → 8080
     List<Object> portsRaw = (List<Object>) m.get("ports");
+
+    if (portsRaw == null || portsRaw.isEmpty()) {
+            throw new RuntimeException("[ConfigParser] Le serveur '" + host + "' n'a pas de 'ports' définis.");
+    }
     List<Integer> ports = new ArrayList<>();
     for (Object p : portsRaw) {
-        ports.add(((Double) p).intValue()); // 8080.0 → 8080
+        ports.add(((Number) p).intValue()); // 8080.0 → 8080
     }
 
     // ── 3. ERROR PAGES ─────────────────────────────────────────────
@@ -69,7 +82,7 @@ private static ConfigServer buildServer(Map<String, Object> m) {
     if (routesRaw != null) {
         for (Object r : routesRaw) {
             Map<String, Object> routeMap = (Map<String, Object>) r;
-            routes.add(buildRoute(routeMap)); // même logique, pour une route
+            routes.add(buildRoute(routeMap, host)); // même logique, pour une route
         }
     }
 
@@ -79,14 +92,18 @@ private static ConfigServer buildServer(Map<String, Object> m) {
 }
 
 @SuppressWarnings("unchecked")
-private static ConfigRoute buildRoute(Map<String, Object> m) {
+private static ConfigRoute buildRoute(Map<String, Object> m, String serverHost) {
 
     // ── 1. CHAMPS SIMPLES ──────────────────────────────────────────
     String path                 = (String)  m.get("path");
     String root                 = (String)  m.get("root");
     String defaultFile          = (String)  m.get("default_file");
     String defaultDirectoryFile = (String)  m.get("default_directory_file");
+     String cgiExtension         = (String) m.get("cgi_extension");
 
+    if (path == null || path.isBlank()) {
+            throw new RuntimeException("[ConfigParser] Une route du serveur '" + serverHost + "' n'a pas de 'path'.");
+    }
     // ── 2. DIRECTORY LISTING ───────────────────────────────────────
     // Peut être absent du JSON (ex: route /upload n'a pas ce champ)
     // → on met false par défaut pour éviter un NullPointerException
@@ -104,10 +121,33 @@ private static ConfigRoute buildRoute(Map<String, Object> m) {
         }
     }
 
+    List<ConfigRedirect> redirects = parseRedirects(m);
+
+
     // ── 4. ASSEMBLAGE ──────────────────────────────────────────────
     // L'ordre des paramètres doit correspondre EXACTEMENT au constructeur :
     // ConfigRoute(path, methods, root, defaultFile, directoryListing, defaultDirectoryFile)
-    return new ConfigRoute(path, methods, root, defaultFile, directoryListing, defaultDirectoryFile);
+    return new ConfigRoute(path, methods, root, defaultFile, directoryListing, defaultDirectoryFile,redirects,cgiExtension);
+}
+
+@SuppressWarnings("unchecked")
+private static List<ConfigRedirect> parseRedirects(Map<String, Object> m) {
+    List<ConfigRedirect> redirects = new ArrayList<>();
+    List<Object> redirectsRaw = (List<Object>) m.get("redirects");
+    if (redirectsRaw != null) {
+        for (Object r : redirectsRaw) {
+            Map<String, Object> redirectMap = (Map<String, Object>) r;
+
+            int code = ((Number) redirectMap.get("code")).intValue(); // ✅ Number pas Double
+
+            String target = (String) redirectMap.get("target");
+            if (target == null || target.isBlank())                   // ✅ validation
+                throw new RuntimeException("[ConfigParser] Redirect sans 'target'");
+
+            redirects.add(new ConfigRedirect(code, target));
+        }
+    }
+    return redirects;
 }
 
 
