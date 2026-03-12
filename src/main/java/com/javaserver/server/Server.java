@@ -6,14 +6,24 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
+
+import com.javaserver.config.Config;
 import com.javaserver.http.HttpRequest;
 
 public class Server {
     private static final int PORT = 8080;
+    private final Selector selector;
+    private final Config config;
+
+    public Server(Config config)  throws IOException {
+        Selector selector = Selector.open();
+        this.selector = selector;
+        this.config = config;
+    }
 
     public void start() {
         try {
-            Selector selector = Selector.open();
+          
 
             ServerSocketChannel serverChannel = ServerSocketChannel.open();
             serverChannel.bind(new InetSocketAddress(PORT));
@@ -53,12 +63,11 @@ public class Server {
                             continue;
                         }
 
-
-
                         String request = new String(buffer.array(), 0, bytesRead);
 
                         HttpRequest httpRequest = HttpRequest.parse(request);
-                        System.out.println("Parsed Request: " + httpRequest.getMethod() + " ttt" + httpRequest.getPath());
+                        System.out
+                                .println("Parsed Request: " + httpRequest.getMethod() + " ttt" + httpRequest.getPath());
 
                         // Minimal HTTP response so browser doesn't hang
                         String body = "<h1>Server is working!</h1>";
