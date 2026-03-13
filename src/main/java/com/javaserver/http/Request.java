@@ -19,6 +19,9 @@ public class Request {
 
         // Ligne de démarrage : GET /index.html HTTP/1.1
         String[] start = headerLines[0].split(" ", 3);
+        if (start.length < 3) {
+        throw new RuntimeException("Invalid request line: " + headerLines[0]);
+        }
         req.method  = start[0];
         req.path    = start[1];
         req.version = start[2];

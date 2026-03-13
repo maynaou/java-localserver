@@ -57,23 +57,47 @@ public class ClientConnection {
         // HttpRequest request = HttpRequestParser.parse(rawRequest);
         // HttpResponse response = Router.handle(request, config);
         // channel.write(ByteBuffer.wrap(response.toBytes()));
-        lastRequest = Request.parse(rawRequest);
-
-// ✅ Vérifier Content-Length contre client_body_limit
-String limitStr = config.getClientBodyLimit();
-if (limitStr != null) {
-    long maxBytes = parseLimit(limitStr);
-    String contentLengthStr = lastRequest.getHeaders().get("Content-Length");
-    if (contentLengthStr != null) {
-        long contentLength = Long.parseLong(contentLengthStr.trim());
-        if (contentLength > maxBytes) {
-            Response r = ErrorHandler.handle(413, config.getErrorPages());
+               // ✅ Fix 3 — Bad request → 400
+        try {
+            lastRequest = Request.parse(rawRequest);
+        } catch (Exception e) {
+            System.out.println("[ClientConnection] Requête malformée: " + e.getMessage());
+            Response r = ErrorHandler.handle(400, config.getErrorPages());
             writeBuffer = ByteBuffer.wrap(r.toBytes());
             key.interestOps(SelectionKey.OP_WRITE);
             return;
         }
-    }
+
+if (lastRequest.getPath().contains("..")) {
+    Response r = ErrorHandler.handle(403, config.getErrorPages());
+    writeBuffer = ByteBuffer.wrap(r.toBytes());
+    key.interestOps(SelectionKey.OP_WRITE);
+    return;
 }
+
+ // ✅ Fix 4 — Content-Length invalide → 400, dépassé → 413
+        String limitStr = config.getClientBodyLimit();
+        if (limitStr != null) {
+            long maxBytes = parseLimit(limitStr);
+            String contentLengthStr = lastRequest.getHeaders().get("Content-Length");
+            if (contentLengthStr != null) {
+                try {
+                    long contentLength = Long.parseLong(contentLengthStr.trim());
+                    if (contentLength > maxBytes) {
+                        Response r = ErrorHandler.handle(413, config.getErrorPages());
+                        writeBuffer = ByteBuffer.wrap(r.toBytes());
+                        key.interestOps(SelectionKey.OP_WRITE);
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    // ✅ Content-Length pas un nombre → 400
+                    Response r = ErrorHandler.handle(400, config.getErrorPages());
+                    writeBuffer = ByteBuffer.wrap(r.toBytes());
+                    key.interestOps(SelectionKey.OP_WRITE);
+                    return;
+                }
+            }
+        }
         Response response = Router.handle(lastRequest, config);
 
         writeBuffer = ByteBuffer.wrap(response.toBytes());
@@ -92,7 +116,10 @@ if (limitStr != null) {
         System.out.println("[ClientConnection] Réponse envoyée complètement.");
 
         // ✅ Vérifier si le client veut garder la connexion ouverte
-        String connection = lastRequest.getHeaders().getOrDefault("Connection", "close");
+        // ✅ Vérifier lastRequest null
+String connection = (lastRequest != null) 
+    ? lastRequest.getHeaders().getOrDefault("Connection", "close")
+    : "close";
         if (connection.equalsIgnoreCase("keep-alive")) {
             // Garder la connexion ouverte — attendre la prochaine requête
             key.interestOps(SelectionKey.OP_READ);

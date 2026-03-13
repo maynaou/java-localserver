@@ -17,6 +17,7 @@ public class StaticHandler {
     public static Response handle(Request request, ConfigRoute route, ConfigServer config) {
 
         String relativePath = request.getPath().substring(route.getPath().length());
+        if (!relativePath.startsWith("/")) relativePath = "/" + relativePath;
         String filePath = route.getRoot() + relativePath;
         Path path = Paths.get(filePath);
 
