@@ -99,7 +99,12 @@ private static ConfigRoute buildRoute(Map<String, Object> m, String serverHost) 
     String root                 = (String)  m.get("root");
     String defaultFile          = (String)  m.get("default_file");
     String defaultDirectoryFile = (String)  m.get("default_directory_file");
-     String cgiExtension         = (String) m.get("cgi_extension");
+    Map<String, Object> cgiMap = (Map<String, Object>) m.get("cgi");
+    String cgiExtension = null;
+    if (cgiMap != null) {
+    // prendre la première extension — ex: ".py"
+    cgiExtension = (String) cgiMap.keySet().iterator().next();
+    }
 
     if (path == null || path.isBlank()) {
             throw new RuntimeException("[ConfigParser] Une route du serveur '" + serverHost + "' n'a pas de 'path'.");

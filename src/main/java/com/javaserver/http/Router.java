@@ -1,28 +1,63 @@
 package com.javaserver.http;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.javaserver.config.ConfigRoute;
 import com.javaserver.config.ConfigServer;
 import com.javaserver.errors.ErrorHandler;
+import com.javaserver.handlers.CGIHandler;
 import com.javaserver.handlers.StaticHandler;
+import com.javaserver.handlers.UploadHandler;
+import com.javaserver.utils.Cookie;
+import com.javaserver.utils.Session;
 
 public class Router {
 
-    public static Response handle(Request request, ConfigServer config) {
+    private static final Map<String, Session> sessions = new HashMap<>();
 
-        // 1. Trouver la route qui correspond au path
+
+       public static Response handle(Request request, ConfigServer config) {
+
+        // 1. Lire le cookie SID
+        String cookieHeader = request.getHeaders().getOrDefault("Cookie", "");
+        String sid = Cookie.get(cookieHeader, "SID");
+
+        // 2. Récupérer ou créer une session
+        Session session = null;
+        if (sid != null) {
+            session = sessions.get(sid);
+        }
+        if (session == null) {
+            session = new Session();
+            sessions.put(session.getId(), session);
+        }
+
+        // 3. Trouver la route
         ConfigRoute route = findRoute(request.getPath(), config);
-
         if (route == null) {
-            // Aucune route trouvée → 404
-           return ErrorHandler.handle(404, config.getErrorPages());        }
+            return ErrorHandler.handle(404, config.getErrorPages());
+        }
 
-        // 2. Vérifier que la méthode est autorisée
+        // 4. Vérifier la méthode
         if (!route.getMethods().contains(request.getMethod())) {
             return ErrorHandler.handle(405, config.getErrorPages());
         }
 
-        // 3. Déléguer au bon handler (pour l'instant juste statique)
-        return StaticHandler.handle(request, route, config);
+        // 5. Déléguer au bon handler
+        Response response;
+        if (route.getCgiExtension() != null) {
+            response = CGIHandler.handle(request, route, config);
+        } else if (request.getMethod().equals("POST")) {
+            response = UploadHandler.handle(request, route, config);
+        } else {
+            response = StaticHandler.handle(request, route, config);
+        }
+
+        // 6. Ajouter le cookie SID dans la réponse
+        response.addHeader("Set-Cookie", Cookie.create("SID", session.getId()));
+
+        return response;
     }
 
     private static ConfigRoute findRoute(String path, ConfigServer config) {

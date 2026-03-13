@@ -10,6 +10,7 @@ import com.javaserver.config.ConfigServer;
 import com.javaserver.errors.ErrorHandler;
 import com.javaserver.http.Request;
 import com.javaserver.http.Response;
+import com.javaserver.utils.MimeTypes;
 
 public class StaticHandler {
 
@@ -41,23 +42,11 @@ public class StaticHandler {
         // 4. Lire le fichier et retourner son contenu
         try {
             byte[] body = Files.readAllBytes(path);
-            String contentType = getMimeType(path.toString());
+            String contentType = MimeTypes.getMimeType(path.toString());
             return new Response(200, "OK", contentType, body);
 
         } catch (IOException e) {
             return new Response(500, "Internal Server Error", "text/html", "<h1>500 Internal Server Error</h1>".getBytes());
         }
-    }
-
-    // Détecter le type de fichier selon l'extension
-    private static String getMimeType(String fileName) {
-        if (fileName.endsWith(".html")) return "text/html";
-        if (fileName.endsWith(".css"))  return "text/css";
-        if (fileName.endsWith(".js"))   return "application/javascript";
-        if (fileName.endsWith(".png"))  return "image/png";
-        if (fileName.endsWith(".jpg"))  return "image/jpeg";
-        if (fileName.endsWith(".json")) return "application/json";
-        if (fileName.endsWith(".pdf"))  return "application/pdf";
-        return "application/octet-stream"; // type par défaut
     }
 }

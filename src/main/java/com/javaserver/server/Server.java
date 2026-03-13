@@ -49,7 +49,7 @@ public class Server {
         channel.configureBlocking(false);
 
         // Lier le canal à l'adresse et au port
-        channel.bind(new InetSocketAddress(config.getHost(), port));
+        channel.bind(new InetSocketAddress(port));
 
         // Enregistrer dans le Selector :
         // OP_ACCEPT = on veut être notifié quand une connexion arrive

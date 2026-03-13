@@ -15,6 +15,7 @@ public class ClientConnection {
     private static final int BUFFER_SIZE = 8192; // 8 KB — taille standard HTTP
 
     private final SocketChannel channel;
+    private Request lastRequest;
     private final ConfigServer config;
     private final ByteBuffer buffer;
     private ByteBuffer writeBuffer;  // buffer pour écrire la réponse (null si rien à écrire)
@@ -53,38 +54,38 @@ public class ClientConnection {
         // HttpRequest request = HttpRequestParser.parse(rawRequest);
         // HttpResponse response = Router.handle(request, config);
         // channel.write(ByteBuffer.wrap(response.toBytes()));
-        Request request = Request.parse(rawRequest);
-        Response response = Router.handle(request, config);
+        lastRequest = Request.parse(rawRequest);
+        Response response = Router.handle(lastRequest, config);
 
         writeBuffer = ByteBuffer.wrap(response.toBytes());
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
 
-    public void write(SelectionKey key) throws IOException {
-        if (writeBuffer == null) return;
+   public void write(SelectionKey key) throws IOException {
+    if (writeBuffer == null) return;
 
-        // Écrire ce qu'on peut — channel.write() retourne les bytes écrits
-        channel.write(writeBuffer);
+    channel.write(writeBuffer);
 
-        if (!writeBuffer.hasRemaining()) {
-            // Tout a été envoyé
-            writeBuffer = null;
+    if (!writeBuffer.hasRemaining()) {
+        writeBuffer = null;
 
-            // Désactiver OP_WRITE — plus rien à envoyer
+        System.out.println("[ClientConnection] Réponse envoyée complètement.");
+
+        // ✅ Vérifier si le client veut garder la connexion ouverte
+        String connection = lastRequest.getHeaders().getOrDefault("Connection", "close");
+        if (connection.equalsIgnoreCase("keep-alive")) {
+            // Garder la connexion ouverte — attendre la prochaine requête
             key.interestOps(SelectionKey.OP_READ);
-
-            System.out.println("[ClientConnection] Réponse envoyée complètement.");
-
-            // Fermer la connexion (HTTP/1.0 style)
-            // TODO : garder ouverte pour HTTP keep-alive
-            close(key);
         } else {
-            // Pas encore tout envoyé — on reviendra au prochain tour de l'EventLoop
-            System.out.println("[ClientConnection] Écriture partielle — "
-                + writeBuffer.remaining() + " bytes restants.");
+            // Fermer la connexion
+            close(key);
         }
+    } else {
+        System.out.println("[ClientConnection] Écriture partielle — "
+            + writeBuffer.remaining() + " bytes restants.");
     }
+}
 
 
     // ── Fermeture propre ──────────────────────────────────────────────────────

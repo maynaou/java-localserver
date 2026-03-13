@@ -1,10 +1,15 @@
 package com.javaserver.http;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Response {
     private int status;
     private String statusText;
     private String contentType;
     private byte[] body;
+    private Map<String, String> extraHeaders = new HashMap<>();
+
 
     public Response(int status, String statusText, String contentType, byte[] body) {
         this.status      = status;
@@ -13,13 +18,25 @@ public class Response {
         this.body        = body;
     }
 
+    public void addHeader(String key, String value) {
+        extraHeaders.put(key, value);
+    }
+
+
     public byte[] toBytes() {
-        String headers = "HTTP/1.1 " + status + " " + statusText + "\r\n"
-            + "Content-Type: "   + contentType + "\r\n"
-            + "Content-Length: " + body.length + "\r\n"
-            + "Connection: close\r\n"
-            + "\r\n";
-        byte[] headerBytes = headers.getBytes();
+        StringBuilder h = new StringBuilder();
+        h.append("HTTP/1.1 ").append(status).append(" ").append(statusText).append("\r\n");
+        h.append("Content-Type: ").append(contentType).append("\r\n");
+        h.append("Content-Length: ").append(body.length).append("\r\n");
+        h.append("Connection: close\r\n");
+
+        // Headers extra (Set-Cookie etc.)
+        for (Map.Entry<String, String> entry : extraHeaders.entrySet()) {
+            h.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
+        }
+
+        h.append("\r\n");
+        byte[] headerBytes = h.toString().getBytes();
         byte[] full = new byte[headerBytes.length + body.length];
         System.arraycopy(headerBytes, 0, full, 0, headerBytes.length);
         System.arraycopy(body, 0, full, headerBytes.length, body.length);
