@@ -8,7 +8,10 @@ import java.util.*;
 
 import com.javaserver.config.Config;
 import com.javaserver.config.ServerConfig;
+import com.javaserver.errors.ErrorHandler;
 import com.javaserver.http.HttpRequest;
+import com.javaserver.http.HttpResponse;
+import com.javaserver.http.Router;
 
 public class Server {
 
@@ -80,7 +83,8 @@ public class Server {
     private void handleAccept(SelectionKey key) throws IOException {
         ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
         SocketChannel client = serverChannel.accept();
-        if (client == null) return;
+        if (client == null)
+            return;
 
         client.configureBlocking(false);
 
@@ -115,21 +119,21 @@ public class Server {
         // Check if we have a complete HTTP request (headers fully received)
         if (state.hasCompleteRequest()) {
             String rawReq = state.rawRequest.toString();
-            HttpRequest request = HttpRequest.parse(rawReq);
-            System.out.println("Request: " + request.getMethod() + " " + request.getPath()
-                    + " [config: " + state.config.getHost() + "]");
 
-            // Build response — hardcoded for now, Router will replace this later
-            String body = "<h1>Hello from " + state.config.getHost() + "</h1>";
-            String response = "HTTP/1.1 200 OK\r\n"
-                    + "Content-Type: text/html\r\n"
-                    + "Content-Length: " + body.length() + "\r\n"
-                    + "Connection: close\r\n"
-                    + "\r\n"
-                    + body;
+            HttpResponse response;
+            try {;
+                HttpRequest request = HttpRequest.parse(rawReq);
+                System.out.println("Request: " + request.getMethod() + " " + request.getPath()
+                        + " [config: " + state.config.getHost() + "]");
 
-            // Store response in state, switch key to write mode
-            state.writeBuffer = ByteBuffer.wrap(response.getBytes());
+                Router router = new Router(state.config);
+                response = router.handle(request);
+
+            } catch (HttpRequest.HttpParseException e) {
+                response = ErrorHandler.handle(e.statusCode, state.config.getErrorPages());
+            }
+
+            state.writeBuffer = ByteBuffer.wrap(response.toBytes());
             key.interestOps(SelectionKey.OP_WRITE);
         }
     }
