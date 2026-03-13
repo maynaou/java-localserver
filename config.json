@@ -24,7 +24,7 @@
         },
         {
           "path": "/upload",
-          "methods": ["POST"],
+          "methods": ["POST","DELETE"],
           "root": "www/uploads",
           "client_body_limit": "50MB"
         },
@@ -46,10 +46,12 @@
         {
           "path": "/old-page",
           "methods": ["GET"],
-          "redirect": {
-            "url": "/new-page",
-            "code": 301
-          }
+           "redirects": [
+        {
+            "code": 301,
+            "target": "/new-page"
+        }
+    ]
         },
         {
           "path": "/api",

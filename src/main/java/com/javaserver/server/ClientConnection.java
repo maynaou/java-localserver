@@ -6,6 +6,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 import com.javaserver.config.ConfigServer;
+import com.javaserver.errors.ErrorHandler;
 import com.javaserver.http.Request;
 import com.javaserver.http.Response;
 import com.javaserver.http.Router;
@@ -19,6 +20,7 @@ public class ClientConnection {
     private final ConfigServer config;
     private final ByteBuffer buffer;
     private ByteBuffer writeBuffer;  // buffer pour écrire la réponse (null si rien à écrire)
+    private long lastActivity = System.currentTimeMillis();
 
 
     public ClientConnection(SocketChannel channel, ConfigServer config) {
@@ -31,6 +33,7 @@ public class ClientConnection {
     // ── Lecture des données brutes ────────────────────────────────────────────
 
     public void read(SelectionKey key) throws IOException {
+        lastActivity = System.currentTimeMillis(); // ✅ mettre à jour
         buffer.clear();
         int bytesRead = channel.read(buffer);
 
@@ -55,6 +58,22 @@ public class ClientConnection {
         // HttpResponse response = Router.handle(request, config);
         // channel.write(ByteBuffer.wrap(response.toBytes()));
         lastRequest = Request.parse(rawRequest);
+
+// ✅ Vérifier Content-Length contre client_body_limit
+String limitStr = config.getClientBodyLimit();
+if (limitStr != null) {
+    long maxBytes = parseLimit(limitStr);
+    String contentLengthStr = lastRequest.getHeaders().get("Content-Length");
+    if (contentLengthStr != null) {
+        long contentLength = Long.parseLong(contentLengthStr.trim());
+        if (contentLength > maxBytes) {
+            Response r = ErrorHandler.handle(413, config.getErrorPages());
+            writeBuffer = ByteBuffer.wrap(r.toBytes());
+            key.interestOps(SelectionKey.OP_WRITE);
+            return;
+        }
+    }
+}
         Response response = Router.handle(lastRequest, config);
 
         writeBuffer = ByteBuffer.wrap(response.toBytes());
@@ -96,8 +115,21 @@ public class ClientConnection {
         System.out.println("[ClientConnection] Connexion fermée.");
     }
 
+    private long parseLimit(String limit) {
+    limit = limit.trim().toUpperCase();
+    if (limit.endsWith("MB")) {
+        return Long.parseLong(limit.replace("MB", "").trim()) * 1024 * 1024;
+    } else if (limit.endsWith("KB")) {
+        return Long.parseLong(limit.replace("KB", "").trim()) * 1024;
+    } else if (limit.endsWith("GB")) {
+        return Long.parseLong(limit.replace("GB", "").trim()) * 1024 * 1024 * 1024;
+    }
+    return Long.parseLong(limit);
+}
+
     // ── Getters ───────────────────────────────────────────────────────────────
 
     public SocketChannel getChannel() { return channel; }
     public ConfigServer getConfig()   { return config;  }
+    public long getLastActivity() { return lastActivity; }
 }

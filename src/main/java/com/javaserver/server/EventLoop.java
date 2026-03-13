@@ -12,6 +12,7 @@ import com.javaserver.config.ConfigServer;
 public class EventLoop {
 
     private final Selector selector;
+    private static final long TIMEOUT_MS = 30_000;
 
     public EventLoop(Selector selector) {
         this.selector = selector;
@@ -23,7 +24,10 @@ public class EventLoop {
         while (true) {
             try {
                 // Bloque jusqu'à ce qu'au moins un canal soit prêt
-                selector.select();
+                selector.select(5000);
+
+                // ✅ Vérifier les connexions inactives
+                checkTimeouts();
 
                 Iterator<SelectionKey> it = selector.selectedKeys().iterator();
                 while (it.hasNext()) {
@@ -49,6 +53,21 @@ public class EventLoop {
             }
         }
     }
+
+
+    // ✅ Fermer les connexions inactives depuis plus de 30 secondes
+private void checkTimeouts() {
+    long now = System.currentTimeMillis();
+    for (SelectionKey key : selector.keys()) {
+        if (key.attachment() instanceof ClientConnection) {
+            ClientConnection conn = (ClientConnection) key.attachment();
+            if (now - conn.getLastActivity() > TIMEOUT_MS) {
+                System.out.println("[EventLoop] Timeout connexion inactive");
+                tryClose(conn, key);
+            }
+        }
+    }
+}
 
     // ── Accepter une nouvelle connexion ───────────────────────────────────────
 

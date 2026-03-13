@@ -3,10 +3,12 @@ package com.javaserver.http;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.javaserver.config.ConfigRedirect;
 import com.javaserver.config.ConfigRoute;
 import com.javaserver.config.ConfigServer;
 import com.javaserver.errors.ErrorHandler;
 import com.javaserver.handlers.CGIHandler;
+import com.javaserver.handlers.DeleteHandler;
 import com.javaserver.handlers.StaticHandler;
 import com.javaserver.handlers.UploadHandler;
 import com.javaserver.utils.Cookie;
@@ -35,6 +37,8 @@ public class Router {
 
         // 3. Trouver la route
         ConfigRoute route = findRoute(request.getPath(), config);
+        System.out.println("[Router] path=" + request.getPath() + " → route=" + (route != null ? route.getPath() : "null"));
+
         if (route == null) {
             return ErrorHandler.handle(404, config.getErrorPages());
         }
@@ -44,15 +48,24 @@ public class Router {
             return ErrorHandler.handle(405, config.getErrorPages());
         }
 
-        // 5. Déléguer au bon handler
-        Response response;
-        if (route.getCgiExtension() != null) {
-            response = CGIHandler.handle(request, route, config);
-        } else if (request.getMethod().equals("POST")) {
-            response = UploadHandler.handle(request, route, config);
-        } else {
-            response = StaticHandler.handle(request, route, config);
+        if (route.getRedirects() != null && !route.getRedirects().isEmpty()) {
+             ConfigRedirect redirect = route.getRedirects().get(0);
+             Response r = new Response(redirect.getCode(), "Moved", "text/html", "".getBytes());
+             r.addHeader("Location", redirect.getTarget());
+            return r;
         }
+
+// 5. Déléguer au bon handler
+Response response;
+if (route.getCgiExtension() != null) {
+    response = CGIHandler.handle(request, route, config);
+} else if (request.getMethod().equals("POST")) {
+    response = UploadHandler.handle(request, route, config);
+} else if (request.getMethod().equals("DELETE")) {
+    response = DeleteHandler.handle(request, route, config);
+} else {
+    response = StaticHandler.handle(request, route, config);
+}
 
         // 6. Ajouter le cookie SID dans la réponse
         response.addHeader("Set-Cookie", Cookie.create("SID", session.getId()));
