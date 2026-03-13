@@ -9,6 +9,7 @@
 /home/amargoum/Desktop/java-localserver/src/main/java/com/javaserver/routing/Route.java
 /home/amargoum/Desktop/java-localserver/src/main/java/com/javaserver/handlers/UploadHandler.java
 /home/amargoum/Desktop/java-localserver/src/main/java/com/javaserver/http/Router.java
+/home/amargoum/Desktop/java-localserver/src/main/java/com/javaserver/server/ClientState.java
 /home/amargoum/Desktop/java-localserver/src/main/java/com/javaserver/config/ConfigParser.java
 /home/amargoum/Desktop/java-localserver/src/main/java/com/javaserver/Main.java
 /home/amargoum/Desktop/java-localserver/src/main/java/com/javaserver/config/ServerConfig.java
