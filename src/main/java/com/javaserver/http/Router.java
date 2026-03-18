@@ -2,8 +2,7 @@ package com.javaserver.http;
 
 import com.javaserver.config.ServerConfig;
 import com.javaserver.errors.ErrorHandler;
-import com.javaserver.http.HttpRequest;
-import com.javaserver.http.HttpResponse;
+
 import com.javaserver.routing.Route;
 
 import java.io.IOException;
@@ -45,10 +44,14 @@ public class Router {
         // Dispatch by method
         try {
             switch (req.getMethod()) {
-                case "GET":    return handleGet(req, route);
-                case "POST":   return handlePost(req, route);
-                case "DELETE": return handleDelete(req, route);
-                default:       return ErrorHandler.handle(405, config.getErrorPages());
+                case "GET":
+                    return handleGet(req, route);
+                case "POST":
+                    return handlePost(req, route);
+                case "DELETE":
+                    return handleDelete(req, route);
+                default:
+                    return ErrorHandler.handle(405, config.getErrorPages());
             }
         } catch (Exception e) {
             System.err.println("Router error: " + e.getMessage());
@@ -61,6 +64,9 @@ public class Router {
     private HttpResponse handleGet(HttpRequest req, Route route) throws IOException {
         Path root = Paths.get(route.getRoot());
         Path target = root.resolve(req.getPath().substring(1)).normalize();
+        if (!isSafePath(root, target)) {
+            return ErrorHandler.handle(403, config.getErrorPages());
+        }
 
         // Block path traversal: resolved path must stay inside root
         if (!target.startsWith(root)) {
@@ -96,7 +102,8 @@ public class Router {
     private HttpResponse serveFile(Path file) throws IOException {
         byte[] content = Files.readAllBytes(file);
         String contentType = Files.probeContentType(file.toFile().toPath());
-        if (contentType == null) contentType = "application/octet-stream";
+        if (contentType == null)
+            contentType = "application/octet-stream";
         return HttpResponse.ok().setBody(content, contentType);
     }
 
@@ -108,9 +115,10 @@ public class Router {
         List<Path> entries = Files.list(dir).sorted().collect(Collectors.toList());
         for (Path entry : entries) {
             String name = entry.getFileName().toString();
-            if (Files.isDirectory(entry)) name += "/";
+            if (Files.isDirectory(entry))
+                name += "/";
             html.append("<li><a href=\"").append(name).append("\">")
-                .append(name).append("</a></li>");
+                    .append(name).append("</a></li>");
         }
 
         html.append("</ul></body></html>");
@@ -137,7 +145,9 @@ public class Router {
         }
 
         Path target = dir.resolve(filename).normalize();
-
+        if (!isSafePath(dir, target)) {
+            return ErrorHandler.handle(403, config.getErrorPages());
+        }
         // Block path traversal
         if (!target.startsWith(dir)) {
             return ErrorHandler.handle(403, config.getErrorPages());
@@ -153,7 +163,9 @@ public class Router {
     private HttpResponse handleDelete(HttpRequest req, Route route) throws IOException {
         Path root = Paths.get(route.getRoot());
         Path target = root.resolve(req.getPath().substring(1)).normalize();
-
+        if (!isSafePath(root, target)) {
+            return ErrorHandler.handle(403, config.getErrorPages());
+        }
         // Block path traversal
         if (!target.startsWith(root)) {
             return ErrorHandler.handle(403, config.getErrorPages());
@@ -180,11 +192,15 @@ public class Router {
         for (Route route : config.getRoutes()) {
             String routePath = route.getPath();
             if (path.startsWith(routePath) && routePath.length() > bestLen) {
-                best    = route;
+                best = route;
                 bestLen = routePath.length();
             }
         }
 
         return best;
+    }
+
+    private boolean isSafePath(Path root, Path target) {
+        return target.normalize().startsWith(root.normalize());
     }
 }

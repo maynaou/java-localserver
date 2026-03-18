@@ -10,7 +10,7 @@ import java.util.Map;
 
 // import java.nio.file.Paths;
 public class ConfigLoader {
-
+    @SuppressWarnings("unchecked")
     public static List<ServerConfig> load(String path) {
         try {
             String text = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
@@ -23,9 +23,7 @@ public class ConfigLoader {
                     for (Object item : rawList) {
 
                         if (item instanceof Map) {
-                            
                             Map<String, Object> map = (Map<String, Object>) item;
-                              System.err.println("Config error:11111111111");
                             ServerConfig cfg = new ServerConfig().fromMap(map);
                             if (cfg != null) {
                                 cfgs.add(cfg);

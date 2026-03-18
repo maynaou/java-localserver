@@ -5,6 +5,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.*;
+import com.javaserver.utils.Cookie;
+import com.javaserver.utils.Session;
 
 import com.javaserver.config.Config;
 import com.javaserver.config.ServerConfig;
@@ -121,13 +123,20 @@ public class Server {
             String rawReq = state.rawRequest.toString();
 
             HttpResponse response;
-            try {;
+            try {
+                ;
                 HttpRequest request = HttpRequest.parse(rawReq);
                 System.out.println("Request: " + request.getMethod() + " " + request.getPath()
                         + " [config: " + state.config.getHost() + "]");
-
+                Map<String, String> cookies = Cookie.parseCookieHeader(
+                        request.getHeader("cookie"));
+                boolean isNewSession = !cookies.containsKey(Session.getCookieName());
+                String sessionId = Session.getOrCreate(cookies);
                 Router router = new Router(state.config);
                 response = router.handle(request);
+                if (isNewSession) {
+                    response.setHeader("Set-Cookie", Session.buildCookieHeader(sessionId));
+                }
 
             } catch (HttpRequest.HttpParseException e) {
                 response = ErrorHandler.handle(e.statusCode, state.config.getErrorPages());
