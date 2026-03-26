@@ -21,6 +21,21 @@ public class StaticHandler {
         String filePath = route.getRoot() + relativePath;
         Path path = Paths.get(filePath);
 
+        // ✅ FIX 3: Vérifier la sécurité path traversal proprement
+        try {
+            path = path.toRealPath();
+            Path routeRoot = Paths.get(route.getRoot()).toRealPath();
+            
+            // Vérifier que le fichier demandé est bien SOUS routeRoot
+            if (!path.startsWith(routeRoot)) {
+                System.out.println("[StaticHandler] ⚠️ Path traversal attempt: " + filePath);
+                return ErrorHandler.handle(403, config.getErrorPages());
+            }
+        } catch (IOException e) {
+            // toRealPath() échoue si le fichier n'existe pas
+            // C'est OK, on va vérifier ci-dessous
+        }
+
         // 2. Si c'est un dossier
         if (Files.isDirectory(path)) {
 

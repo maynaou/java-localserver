@@ -6,6 +6,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.List;
 
 import com.javaserver.config.ConfigServer;
 
@@ -81,10 +82,11 @@ private void checkTimeouts() {
         clientChannel.configureBlocking(false);
 
         // Récupérer la config attachée à ce canal serveur
-        ConfigServer config = (ConfigServer) key.attachment();
+       List<ConfigServer> configs = (List<ConfigServer>) key.attachment();
+
 
         // Créer un objet qui représente ce client
-        ClientConnection connection = new ClientConnection(clientChannel, config);
+        ClientConnection connection = new ClientConnection(clientChannel, configs);
 
         // Enregistrer ce client dans le Selector :
         // OP_READ = on veut être notifié quand il envoie des données

@@ -5,7 +5,10 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.javaserver.config.ConfigServer;
 
@@ -20,18 +23,25 @@ public class Server {
 
     public void start() throws IOException {
         System.out.println("Démarrage du serveur avec la configuration:");
-        for (ConfigServer config : configs) {
-            System.out.println(config);
-        }
 
         selector = Selector.open();
 
-        // Ouvrir un canal par port pour chaque serveur configuré
-        for (ConfigServer config : configs) {
-            for (int port : config.getPorts()) {
-                openChannel(config, port);
-            }
-        }
+Map<Integer, List<ConfigServer>> portMap = new HashMap<>();
+
+// regrouper configs par port
+for (ConfigServer config : configs) {
+    for (int port : config.getPorts()) {
+        portMap.computeIfAbsent(port, k -> new ArrayList<>()).add(config);
+    }
+}
+
+// ouvrir UN seul channel par port
+for (Map.Entry<Integer, List<ConfigServer>> entry : portMap.entrySet()) {
+    int port = entry.getKey();
+    List<ConfigServer> configsForPort = entry.getValue();
+
+    openChannel(port, configsForPort);
+}
 
         System.out.println("[Server] Démarré — en attente de connexions...");
 
@@ -42,7 +52,7 @@ public class Server {
 
         // ── Ouverture d'un canal sur un port ──────────────────────────────────────
 
-    private void openChannel(ConfigServer config, int port) throws IOException {
+    private void openChannel(int port, List<ConfigServer> configs) throws IOException {
         ServerSocketChannel channel = ServerSocketChannel.open();
 
         // Non-bloquant : obligatoire pour NIO Selector
@@ -54,9 +64,9 @@ public class Server {
         // Enregistrer dans le Selector :
         // OP_ACCEPT = on veut être notifié quand une connexion arrive
         // config     = attachée à la clé, récupérée dans EventLoop
-        channel.register(selector, SelectionKey.OP_ACCEPT, config);
+        channel.register(selector, SelectionKey.OP_ACCEPT, configs);
 
-        System.out.println("[Server] Écoute sur " + config.getHost() + ":" + port);
+        System.out.println("[Server] Écoute sur port " + port + " pour " + configs.size() + " serveur(s)");
     }
 
     // ── Arrêt propre ──────────────────────────────────────────────────────────

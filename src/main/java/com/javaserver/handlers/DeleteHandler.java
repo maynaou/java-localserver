@@ -22,6 +22,19 @@ public class DeleteHandler {
 
         System.out.println("[DeleteHandler] Supprimer: " + path.toAbsolutePath());
 
+        // ✅ FIX 3: Sécurité path traversal
+        try {
+            path = path.toRealPath();
+            Path routeRoot = Paths.get(route.getRoot()).toRealPath();
+            
+            if (!path.startsWith(routeRoot)) {
+                System.out.println("[DeleteHandler] ⚠️ Path traversal attempt: " + filePath);
+                return ErrorHandler.handle(403, config.getErrorPages());
+            }
+        } catch (IOException e) {
+            // Fichier n'existe peut-être pas, c'est OK
+        }
+
         // 2. Fichier introuvable → 404
         if (!Files.exists(path)) {
             return ErrorHandler.handle(404, config.getErrorPages());

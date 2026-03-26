@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.List;
 
 import com.javaserver.config.ConfigServer;
 import com.javaserver.errors.ErrorHandler;
@@ -17,15 +18,20 @@ public class ClientConnection {
 
     private final SocketChannel channel;
     private Request lastRequest;
-    private final ConfigServer config;
+    private final List<ConfigServer> configs;
     private final ByteBuffer buffer;
     private ByteBuffer writeBuffer;  // buffer pour écrire la réponse (null si rien à écrire)
     private long lastActivity = System.currentTimeMillis();
+    
+    // ✅ FIX 2: Accumulation du request body pour les gros uploads (en bytes!)
+    private java.io.ByteArrayOutputStream requestBytes = new java.io.ByteArrayOutputStream();
+    private int expectedContentLength = 0;
+    private boolean headersParsed = false;
 
 
-    public ClientConnection(SocketChannel channel, ConfigServer config) {
+    public ClientConnection(SocketChannel channel, List<ConfigServer> configs) {
         this.channel = channel;
-        this.config  = config;
+        this.configs  = configs;
         this.buffer  = ByteBuffer.allocate(BUFFER_SIZE);
         this.writeBuffer = null;
     }
@@ -33,47 +39,96 @@ public class ClientConnection {
     // ── Lecture des données brutes ────────────────────────────────────────────
 
     public void read(SelectionKey key) throws IOException {
-        lastActivity = System.currentTimeMillis(); // ✅ mettre à jour
+        lastActivity = System.currentTimeMillis();
         buffer.clear();
         int bytesRead = channel.read(buffer);
 
         if (bytesRead == -1) {
-            // Le client a fermé la connexion proprement
             close(key);
             return;
         }
 
-        if (bytesRead == 0) return; // rien à lire pour l'instant
+        if (bytesRead == 0) return;
 
-        // Préparer le buffer pour la lecture
+        // Ajouter les données lues à l'accumulateur
         buffer.flip();
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
-        String rawRequest = new String(data);
+        requestBytes.write(data);
 
-        System.out.println("[ClientConnection] Reçu:\n" + rawRequest);
+        byte[] allBytes = requestBytes.toByteArray();
 
-        // TODO — prochaine étape :
-        // HttpRequest request = HttpRequestParser.parse(rawRequest);
-        // HttpResponse response = Router.handle(request, config);
-        // channel.write(ByteBuffer.wrap(response.toBytes()));
-               // ✅ Fix 3 — Bad request → 400
+        // ✅ FIX 2: Traiter headers et body séparément
+        // Les headers sont ASCII/UTF-8, mais le body peut être binaire
+        
+        if (!headersParsed) {
+            // Chercher la fin des headers (séquence \r\n\r\n en bytes)
+            int headerEnd = findBytes(allBytes, "\r\n\r\n".getBytes());
+            if (headerEnd == -1) {
+                // Headers incomplets, attendre
+                return;
+            }
+            
+            headersParsed = true;
+            
+            // Parser headers comme string (jusqu'au séparateur)
+            String headerStr = new String(allBytes, 0, headerEnd);
+            String[] lines = headerStr.split("\r\n");
+            for (String line : lines) {
+                if (line.toLowerCase().startsWith("content-length:")) {
+                    try {
+                        expectedContentLength = Integer.parseInt(line.substring(15).trim());
+                        System.out.println("[ClientConnection] Content-Length: " + expectedContentLength);
+                    } catch (NumberFormatException e) {
+                        System.out.println("[ClientConnection] Content-Length invalide");
+                    }
+                }
+            }
+        }
+
+        // ✅ Vérifier si on a reçu TOUS les bytes du body
+        int headerEnd = findBytes(allBytes, "\r\n\r\n".getBytes());
+        if (headerEnd != -1) {
+            int bodyStart = headerEnd + 4;
+            int totalBodyLength = allBytes.length - bodyStart;
+            
+            // Attendre que le body soit complet
+            if (totalBodyLength < expectedContentLength) {
+                return;  // Continuer à lire
+            }
+        }
+
+        // ✅ Maintenant on a toute la requête
+        String fullRequest = new String(allBytes);
+        System.out.println("[ClientConnection] Requête complète: headers+" + expectedContentLength + " body bytes");
+
+        // Reset pour la prochaine requête (keep-alive)
+        requestBytes = new java.io.ByteArrayOutputStream();
+        headersParsed = false;
+        expectedContentLength = 0;
+
+        // Parser la requête
         try {
-            lastRequest = Request.parse(rawRequest);
+            lastRequest = Request.parse(fullRequest);
         } catch (Exception e) {
             System.out.println("[ClientConnection] Requête malformée: " + e.getMessage());
+            ConfigServer config = getDefaultConfig();
             Response r = ErrorHandler.handle(400, config.getErrorPages());
             writeBuffer = ByteBuffer.wrap(r.toBytes());
             key.interestOps(SelectionKey.OP_WRITE);
             return;
         }
 
-if (lastRequest.getPath().contains("..")) {
-    Response r = ErrorHandler.handle(403, config.getErrorPages());
-    writeBuffer = ByteBuffer.wrap(r.toBytes());
-    key.interestOps(SelectionKey.OP_WRITE);
-    return;
-}
+        // ✅ Sélectionner le bon ConfigServer basé sur le header Host
+        ConfigServer config = findConfigByHost(lastRequest);
+        if (config == null) {
+            config = getDefaultConfig();
+            if (config == null) {
+                System.out.println("[ClientConnection] Aucun serveur configuré!");
+                close(key);
+                return;
+            }
+        }
 
  // ✅ Fix 4 — Content-Length invalide → 400, dépassé → 413
         String limitStr = config.getClientBodyLimit();
@@ -90,7 +145,6 @@ if (lastRequest.getPath().contains("..")) {
                         return;
                     }
                 } catch (NumberFormatException e) {
-                    // ✅ Content-Length pas un nombre → 400
                     Response r = ErrorHandler.handle(400, config.getErrorPages());
                     writeBuffer = ByteBuffer.wrap(r.toBytes());
                     key.interestOps(SelectionKey.OP_WRITE);
@@ -102,6 +156,23 @@ if (lastRequest.getPath().contains("..")) {
 
         writeBuffer = ByteBuffer.wrap(response.toBytes());
         key.interestOps(SelectionKey.OP_WRITE);
+    }
+
+    // ✅ Helper: trouver un pattern de bytes
+    private int findBytes(byte[] haystack, byte[] needle) {
+        for (int i = 0; i <= haystack.length - needle.length; i++) {
+            boolean found = true;
+            for (int j = 0; j < needle.length; j++) {
+                if (haystack[i + j] != needle[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return i;
+            }
+        }
+        return -1;
     }
 
 
@@ -154,9 +225,58 @@ String connection = (lastRequest != null)
     return Long.parseLong(limit);
 }
 
+    // ── Virtual Hosting Helper ─────────────────────────────────────────────────
+
+    /**
+     * Sélectionne le ConfigServer approprié en fonction du header Host.
+     * Support du virtual hosting.
+     */
+    private ConfigServer findConfigByHost(Request request) {
+        String hostHeader = request.getHeaders().get("Host");
+        if (hostHeader == null || hostHeader.isEmpty()) {
+            return null;
+        }
+
+        // Format: "hostname" ou "hostname:port"
+        String hostname = hostHeader.split(":")[0].trim();
+        System.out.println("[ClientConnection] Host header: " + hostHeader + " → hostname: " + hostname);
+
+        // Chercher le ConfigServer qui correspond à ce hostname
+        for (ConfigServer config : configs) {
+            if (config.getHost() != null && config.getHost().equalsIgnoreCase(hostname)) {
+                System.out.println("[ClientConnection] ✅ Trouvé ConfigServer pour: " + hostname);
+                return config;
+            }
+        }
+
+        System.out.println("[ClientConnection] ⚠️ Aucun ConfigServer pour: " + hostname);
+        return null;
+    }
+
+    /**
+     * Retourner le ConfigServer par défaut (marked as default).
+     */
+    private ConfigServer getDefaultConfig() {
+        // Chercher un serveur marqué comme "default"
+        for (ConfigServer config : configs) {
+            if (config.isDefaultServer()) {
+                System.out.println("[ClientConnection] Utilisant le serveur par défaut: " + config.getHost());
+                return config;
+            }
+        }
+
+        // Sinon, prendre le premier
+        if (!configs.isEmpty()) {
+            System.out.println("[ClientConnection] Pas de serveur par défaut, utilisant le premier: " + configs.get(0).getHost());
+            return configs.get(0);
+        }
+
+        return null;
+    }
+
     // ── Getters ───────────────────────────────────────────────────────────────
 
     public SocketChannel getChannel() { return channel; }
-    public ConfigServer getConfig()   { return config;  }
+    public List<ConfigServer> getConfigs()   { return configs;  }
     public long getLastActivity() { return lastActivity; }
 }

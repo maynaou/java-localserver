@@ -2,7 +2,7 @@
   "servers": [
     {
       "host": "localhost",
-      "ports": [8080, 8081],
+      "ports": [8080],
       "default_server": true,
       "client_body_limit": "10MB",
       "error_pages": {
@@ -16,7 +16,7 @@
       "routes": [
         {
           "path": "/",
-          "methods": ["GET"],
+          "methods": ["GET", "HEAD"],
           "root": "www",
           "default_file": "index.html",
           "directory_listing": false,
@@ -47,7 +47,7 @@
           "path": "/old-page",
           "methods": ["GET"],
            "redirects": [
-        {
+            {
             "code": 301,
             "target": "/new-page"
         }
@@ -58,26 +58,6 @@
           "methods": ["GET", "POST", "DELETE"],
           "root": "www/api",
           "directory_listing": false
-        }
-      ]
-    },
-    {
-      "host": "localhost",
-      "ports": [9090],
-      "default_server": false,
-      "client_body_limit": "5MB",
-      "error_pages": {
-        "404": "error_pages/404.html",
-        "500": "error_pages/500.html"
-      },
-      "routes": [
-        {
-          "path": "/",
-          "methods": ["GET"],
-          "root": "www",
-          "default_file": "index.html",
-          "directory_listing": false,
-          "default_directory_file": "index.html"
         }
       ]
     }
