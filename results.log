@@ -1,0 +1,61 @@
+==============================
+➡️ Basic request
+200
+➡️ Virtual hosting test
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Hello from JavaServer!</h1>
+</body>
+</html>➡️ 404 test
+404
+➡️ 403 test
+404
+➡️ 413 test
+405
+➡️ Redirection test
+404
+➡️ Keep-alive test
+Connection: keep-alive
+➡️ Stress test (30s, 100 clients)
+{	"transactions":			         452,
+	"availability":			      100.00,
+	"elapsed_time":			        0.62,
+	"data_transferred":		        0.03,
+	"response_time":		        0.07,
+	"transaction_rate":		      729.03,
+	"throughput":			        0.06,
+	"concurrency":			       48.84,
+	"successful_transactions":	         452,
+	"failed_transactions":		           0,
+	"longest_transaction":		        0.13,
+	"shortest_transaction":		        0.00
+}
+➡️ Stress test with Host header
+{	"transactions":			        3294,
+	"availability":			      100.00,
+	"elapsed_time":			        4.94,
+	"data_transferred":		        0.25,
+	"response_time":		        0.13,
+	"transaction_rate":		      666.80,
+	"throughput":			        0.05,
+	"concurrency":			       88.36,
+	"successful_transactions":	        3294,
+	"failed_transactions":		           0,
+	"longest_transaction":		        4.47,
+	"shortest_transaction":		        0.00
+}
+➡️ Memory check (server PID)
+    PID COMMAND         %MEM   RSS    VSZ
+  65683 node             0.6 54404 1035920
+    PID COMMAND         %MEM   RSS    VSZ
+  66428 node             0.5 45772 1028692
+    PID COMMAND         %MEM   RSS    VSZ
+ 261110 node             0.8 66508 1097556
+    PID COMMAND         %MEM   RSS    VSZ
+ 261529 node             0.7 63312 1031312
+    PID COMMAND         %MEM   RSS    VSZ
+ 268626 node             0.7 60768 1028496
+    PID COMMAND         %MEM   RSS    VSZ
+ 268743 node             0.8 67600 1098068
+==============================

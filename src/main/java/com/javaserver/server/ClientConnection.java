@@ -154,6 +154,12 @@ public class ClientConnection {
         }
         Response response = Router.handle(lastRequest, config);
 
+        // ✅ Keep-Alive support: respect Client's Connection header
+        String connectionHeader = lastRequest.getHeaders().get("Connection");
+        if ("keep-alive".equalsIgnoreCase(connectionHeader)) {
+            response.setKeepAlive(true);
+        }
+
         writeBuffer = ByteBuffer.wrap(response.toBytes());
         key.interestOps(SelectionKey.OP_WRITE);
     }

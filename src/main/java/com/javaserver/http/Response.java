@@ -9,6 +9,7 @@ public class Response {
     private String contentType;
     private byte[] body;
     private Map<String, String> extraHeaders = new HashMap<>();
+    private boolean keepAlive = false;
 
 
     public Response(int status, String statusText, String contentType, byte[] body) {
@@ -22,13 +23,17 @@ public class Response {
         extraHeaders.put(key, value);
     }
 
+    public void setKeepAlive(boolean keep) {
+        this.keepAlive = keep;
+    }
+
 
     public byte[] toBytes() {
         StringBuilder h = new StringBuilder();
         h.append("HTTP/1.1 ").append(status).append(" ").append(statusText).append("\r\n");
         h.append("Content-Type: ").append(contentType).append("\r\n");
         h.append("Content-Length: ").append(body.length).append("\r\n");
-        h.append("Connection: close\r\n");
+        h.append("Connection: ").append(keepAlive ? "keep-alive" : "close").append("\r\n");
 
         // Headers extra (Set-Cookie etc.)
         for (Map.Entry<String, String> entry : extraHeaders.entrySet()) {

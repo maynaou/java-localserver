@@ -1,0 +1,47 @@
+==============================
+➡️ Basic GET request
+200
+➡️ Virtual hosting
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Hello from JavaServer!</h1>
+</body>
+</html>➡️ 404 test
+404
+➡️ 403 test
+404
+➡️ 413 test
+405
+➡️ Redirection test
+404
+➡️ Keep-alive test
+Connection: keep-alive
+➡️ GET / POST / DELETE methods
+200
+405
+405
+➡️ Wrong request test
+405
+➡️ File upload / download test
+<h1>Upload réussi: upload_1774551540532.bin</h1><p>Taille: 12 bytes</p><h1>405 Method Not Allowed</h1>
+➡️ Stress test 30s, 100 clients
+{	"transactions":			        1859,
+	"availability":			      100.00,
+	"elapsed_time":			        1.42,
+	"data_transferred":		        0.14,
+	"response_time":		        0.05,
+	"transaction_rate":		     1309.16,
+	"throughput":			        0.10,
+	"concurrency":			       62.35,
+	"successful_transactions":	        1859,
+	"failed_transactions":		           0,
+	"longest_transaction":		        1.11,
+	"shortest_transaction":		        0.00
+}
+➡️ Memory check
+    PID COMMAND         %MEM   RSS    VSZ
+ 261110 node             0.8 66508 1097556
+    PID COMMAND         %MEM   RSS    VSZ
+ 261529 node             0.7 63952 1031824
+==============================
