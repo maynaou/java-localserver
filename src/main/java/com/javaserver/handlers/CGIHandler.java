@@ -17,7 +17,8 @@ public class CGIHandler {
         // 1. Construire le chemin du script
         // ex: route.path="/scripts", request.path="/scripts/hello.py"
         // → scriptPath = "cgi-bin/hello.py"
-        String scriptPath = route.getRoot() + request.getPath().substring(route.getPath().length());
+        String fullPath = request.getPath().substring(route.getPath().length());
+        String scriptPath = route.getRoot() + fullPath.split("\\?")[0];
         System.out.println("[CGIHandler] Script: " + scriptPath);
 
         try {

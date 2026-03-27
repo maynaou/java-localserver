@@ -47,4 +47,8 @@ public class Response {
         System.arraycopy(body, 0, full, headerBytes.length, body.length);
         return full;
     }
+
+    public void setBody(byte[] body) {
+    this.body = body;
+    }
 }

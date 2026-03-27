@@ -55,6 +55,7 @@ public class JsonParser {
             char next = peek();
             if (next == '}') { pos++; break; } 
             if (next == ',') { pos++; continue; } 
+            throw new RuntimeException("[JsonParser] Caractère inattendu: '" + next + "' à pos=" + pos);
         }
 
         return obj;
@@ -98,6 +99,7 @@ public class JsonParser {
             char next = peek();
             if (next == ']') { pos++; break; }
             if (next == ',') { pos++; continue; }
+            throw new RuntimeException("[JsonParser] Caractère inattendu: '" + next + "' à pos=" + pos);
         }
        return list; // TODO
     }

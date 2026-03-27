@@ -19,44 +19,42 @@
           "methods": ["GET", "HEAD"],
           "root": "www",
           "default_file": "index.html",
-          "directory_listing": false,
-          "default_directory_file": "index.html"
-        },
-        {
-          "path": "/upload",
-          "methods": ["POST","DELETE"],
-          "root": "www/uploads",
-          "client_body_limit": "50MB"
-        },
-        {
-          "path": "/files",
-          "methods": ["GET"],
-          "root": "www/files",
-          "directory_listing": true,
-          "default_directory_file": "index.html"
-        },
-        {
-          "path": "/scripts",
-          "methods": ["GET", "POST"],
-          "root": "cgi-bin",
-          "cgi": {
-            ".py": "python3"
-          }
-        },
-        {
-          "path": "/old-page",
-          "methods": ["GET"],
-           "redirects": [
-            {
-            "code": 301,
-            "target": "/new-page"
+          "directory_listing": false
         }
-    ]
-        },
+      ]
+    },
+    {
+      "host": "site2.com",
+      "ports": [8081],
+      "default_server": false,
+      "client_body_limit": "5MB",
+      "error_pages": {
+        "404": "error_pages/404.html"
+      },
+      "routes": [
         {
-          "path": "/api",
-          "methods": ["GET", "POST", "DELETE"],
-          "root": "www/api",
+          "path": "/",
+          "methods": ["GET"],
+          "root": "www2",
+          "default_file": "index.html",
+          "directory_listing": false
+        }
+      ]
+    },
+    {
+      "host": "site3.com",
+      "ports": [8080],
+      "default_server": false,
+      "client_body_limit": "5MB",
+      "error_pages": {
+        "404": "error_pages/404.html"
+      },
+      "routes": [
+        {
+          "path": "/",
+          "methods": ["GET"],
+          "root": "www3",
+          "default_file": "index.html",
           "directory_listing": false
         }
       ]

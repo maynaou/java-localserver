@@ -65,7 +65,19 @@ public class ClientConnection {
             // Chercher la fin des headers (séquence \r\n\r\n en bytes)
             int headerEnd = findBytes(allBytes, "\r\n\r\n".getBytes());
             if (headerEnd == -1) {
+                    String received = new String(allBytes);
+    boolean looksLikeHttp = received.startsWith("GET ") || 
+                            received.startsWith("POST ") ||
+                            received.startsWith("DELETE ") ||
+                            received.startsWith("PUT ") ||
+                            received.startsWith("HEAD ") ||
+                            received.startsWith("OPTIONS ");
                 // Headers incomplets, attendre
+              if (!looksLikeHttp || allBytes.length > 8192) {
+                 Response r = ErrorHandler.handle(400, getDefaultConfig().getErrorPages());
+                 writeBuffer = ByteBuffer.wrap(r.toBytes());
+                 key.interestOps(SelectionKey.OP_WRITE);
+              }
                 return;
             }
             
@@ -99,7 +111,6 @@ public class ClientConnection {
         }
 
         // ✅ Maintenant on a toute la requête
-        String fullRequest = new String(allBytes);
         System.out.println("[ClientConnection] Requête complète: headers+" + expectedContentLength + " body bytes");
 
         // Reset pour la prochaine requête (keep-alive)
@@ -109,7 +120,7 @@ public class ClientConnection {
 
         // Parser la requête
         try {
-            lastRequest = Request.parse(fullRequest);
+           lastRequest = Request.parse(allBytes);
         } catch (Exception e) {
             System.out.println("[ClientConnection] Requête malformée: " + e.getMessage());
             ConfigServer config = getDefaultConfig();

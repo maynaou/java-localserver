@@ -69,6 +69,9 @@ if (route.getCgiExtension() != null) {
 
         // 6. Ajouter le cookie SID dans la réponse
         response.addHeader("Set-Cookie", Cookie.create("SID", session.getId()));
+        if (request.getMethod().equals("HEAD")) {
+           response.setBody(new byte[0]);
+        }
 
         return response;
     }
