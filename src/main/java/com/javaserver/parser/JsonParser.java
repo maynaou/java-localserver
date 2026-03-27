@@ -63,9 +63,11 @@ public class JsonParser {
 
     public String parseString() {
         expect('"');
+
         StringBuilder sb = new StringBuilder();
         while (pos < src.length()) {
             char c = src.charAt(pos++);
+
 
             if (c == '"') return sb.toString(); // guillemet fermant → fin
 

@@ -39,12 +39,12 @@ public class Response {
         for (Map.Entry<String, String> entry : extraHeaders.entrySet()) {
             h.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
         }
-
         h.append("\r\n");
         byte[] headerBytes = h.toString().getBytes();
         byte[] full = new byte[headerBytes.length + body.length];
         System.arraycopy(headerBytes, 0, full, 0, headerBytes.length);
         System.arraycopy(body, 0, full, headerBytes.length, body.length);
+ 
         return full;
     }
 

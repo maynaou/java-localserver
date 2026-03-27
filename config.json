@@ -24,7 +24,7 @@
         },
         {
           "path": "/upload",
-          "methods": ["POST","DELETE"],
+          "methods": ["POST","DELETE","GET"],
           "root": "www/uploads",
           "client_body_limit": "50MB"
         },

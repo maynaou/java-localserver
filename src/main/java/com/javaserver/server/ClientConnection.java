@@ -96,6 +96,21 @@ public class ClientConnection {
                     }
                 }
             }
+
+            // ✅ Vérifier la limite APRÈS avoir lu le Content-Length
+            ConfigServer tmpConfig = getDefaultConfig();
+            if (tmpConfig != null && tmpConfig.getClientBodyLimit() != null) {
+                long maxBytes = parseLimit(tmpConfig.getClientBodyLimit());
+                if (expectedContentLength > maxBytes) {
+                    Response r = ErrorHandler.handle(413, tmpConfig.getErrorPages());
+                    writeBuffer = ByteBuffer.wrap(r.toBytes());
+                    key.interestOps(SelectionKey.OP_WRITE);
+                    requestBytes = new java.io.ByteArrayOutputStream();
+                    headersParsed = false;
+                    expectedContentLength = 0;
+                    return;
+                }
+            }
         }
 
         // ✅ Vérifier si on a reçu TOUS les bytes du body
