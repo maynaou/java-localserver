@@ -1,5 +1,5 @@
-com/javaserver/server/ClientConnection.class
 com/javaserver/handlers/UploadHandler.class
+com/javaserver/server/ClientConnection.class
 com/javaserver/http/Router.class
 com/javaserver/utils/Cookie.class
 com/javaserver/config/ConfigServer.class
@@ -15,7 +15,7 @@ com/javaserver/App.class
 com/javaserver/http/Response.class
 com/javaserver/handlers/DeleteHandler.class
 com/javaserver/handlers/CGIHandler.class
-com/javaserver/server/EventLoop.class
 com/javaserver/config/ConfigLoader.class
+com/javaserver/server/EventLoop.class
 com/javaserver/handlers/StaticHandler.class
 com/javaserver/config/ConfigRedirect.class
